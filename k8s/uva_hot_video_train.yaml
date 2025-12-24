@@ -1,0 +1,121 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # 🔴 [必填] 作业名称建议包含个人标识，防止重名冲突
+  name: 91mrqiao-basic-job
+  namespace: default
+  labels:
+    app: train-job
+    # 🟢 [必填] Job 自身必须带标签 (为了通过 Job Admission Policy)
+    eks.ebcloud.com/prepaid: "true"
+spec:
+  # ✅ Job 总共允许跑 7 天 (7 * 24 * 3600)
+  activeDeadlineSeconds: 604800
+
+  # ✅ [核心] 允许重试次数 (也就是允许“轮转”的次数)
+  # 比如你想跑 5 天，每天重启一次，这里至少设为 5，建议设大一点容错
+  backoffLimit: 10
+
+  # ✅ [清理] 任务完成后(无论成功失败) 10分钟自动删除 Job 对象，防止历史记录堆积
+  ttlSecondsAfterFinished: 600
+
+  template:
+    metadata:
+      labels:
+        app: train-job
+        # 🟢 [必须] Pod 模板也必须带标签！(为了通过 Pod 策略)
+        # ⚠️ 如果漏掉这里，Job Controller 创建 Pod 时会被 Admission Webhook 拒绝
+        eks.ebcloud.com/prepaid: "true"
+    spec:
+      # ✅ [核心] 失败后重启 (创建新 Pod 排队)
+      restartPolicy: OnFailure
+
+      # ✅ Job 单轮次允许跑 4h (4 * 3600)
+      activeDeadlineSeconds: 14400
+      
+      imagePullSecrets:
+        - name: aliyun-regcred
+
+      # 节点亲和性设置 (用于指定 GPU 型号)。不要调整，目前节点池内只有 A800 节点
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: cloud.ebtech.com/gpu
+                    operator: In
+                    values:
+                      - A800_NVLINK_80GB
+                  # 🟡 [建议] 如果因为驱动升级导致 Pod 无法调度，请注释掉下方驱动版本限制
+                  - key: cloud.ebtech.com/gpu-driver
+                    operator: In
+                    values:
+                      - 580.65.06
+
+      containers:
+      - name: 91mrqiao-job-container
+        image: crpi-4h7f6m1tjs5g4t58.cn-hangzhou.personal.cr.aliyuncs.com/91_mrqiao/basic_env:devel
+        imagePullPolicy: IfNotPresent
+
+        # 🔴 设置工作目录，避免命令里写长路径
+        workingDir: /workspace/qiaohansheng/
+        # =========================================================
+        # 🟢 [核心黑科技] 不改代码实现自动轮转
+        # =========================================================
+        # 解释：
+        # timeout -s SIGTERM 14200s: 运行 14200秒 (约3.8小时)
+        # bash train_job.sh: 实际的训练脚本
+        #
+        # 逻辑：
+        # 1. 如果训练在 3.8小时内完成了 -> 返回 0 -> Job 成功结束。
+        # 2. 如果超过 3.8小时 -> timeout 杀掉进程 -> 返回 124 (错误) -> K8s 认为失败 -> 触发重启排队！
+        # 3. 到达时间时 timeout 会先发送一个 SIGTERM 信号，如果你想处理的话，
+        #    在 Python 里可以 catch 到这个信号后保存模型。（可选）
+        # =========================================================
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            
+            source /workspace/qiaohansheng/.bashrc_persist
+            conda activate uva
+            cd unified_video_action_hot
+            accelerate launch --num_processes=4 train.py     --config-dir=.     --config-name=uva_hot_pusht.yaml     model.policy.action_model_params.predict_action=False     model.policy.selected_training_mode=video_model     model.policy.optimizer.learning_rate=1e-4     logging.project=uva_serious     hydra.run.dir="checkpoints/test1_video_only_hot_neo"
+
+
+        resources:
+          limits:
+            nvidia.com/gpu: "4"
+            cpu: "10"
+            memory: 100Gi
+
+        volumeMounts:
+        # 1. 个人工作区 (读写)
+        - name: workspace-volume
+          mountPath: /workspace
+        # 2. 数据集 (谨慎读写)
+        - name: dataset-volume
+          mountPath: /dataset
+        # 3. 公共盘 (必须只读)，云平台提供
+        - name: public-volume
+          mountPath: /public
+          readOnly: true  # 🛡️ [安全强制] 防止误删物理机文件！
+        
+        - mountPath: /dev/shm
+          name: dshm
+
+      volumes:
+      - name: workspace-volume
+        persistentVolumeClaim:
+          claimName: cvrlab-workspace
+      - name: dataset-volume
+        persistentVolumeClaim:
+          claimName: cvrlab-dataset
+      # 挂载宿主机目录（云平台提供）
+      - name: public-volume
+        hostPath:
+          path: /public
+          type: Directory
+      - name: dshm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 16Gi
