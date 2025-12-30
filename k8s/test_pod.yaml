@@ -40,7 +40,7 @@ spec:
     # 🔴 [必填] 你的镜像地址
     image: crpi-4h7f6m1tjs5g4t58.cn-hangzhou.personal.cr.aliyuncs.com/91_mrqiao/basic_env:devel
     # 如果你的镜像发生了改动，请将镜像拉取策略设置为 Always，如果是因为镜像以外的其他原因，请设置为 IfNotPresent
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: IfNotPresent #Always
 
     # 🔴 [必填] 修改到自己的workspace
     workingDir: /workspace/qiaohansheng/
