@@ -1,7 +1,7 @@
 # ==========================================================
 # 📦 Base Image
 # ==========================================================
-FROM nvcr.io/nvidia/cuda:12.8.0-cudnn-runtime-ubuntu24.04
+FROM nvcr.io/nvidia/cuda:12.8.0-cudnn-devel-ubuntu24.04
 
 LABEL maintainer="91mrqiao <91mrqiao@mail.nwpu.edu.cn>"
 LABEL description="basic_env"
@@ -96,6 +96,11 @@ RUN pip install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple --upgrad
         imageio imageio[ffmpeg] \
         pyyaml ipython jupyterlab notebook && \
     conda clean -afy
+
+# ==========================================================
+# 🔧 持久化 bashrc 加载自定义文件
+# ==========================================================
+RUN echo "source /workspace/qiaohansheng/.bashrc_persist" >> /home/$USERNAME/.bashrc
 
 # ==========================================================
 # 🚀 Entrypoint
