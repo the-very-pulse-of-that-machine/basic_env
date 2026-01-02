@@ -78,10 +78,10 @@ spec:
             source /workspace/qiaohansheng/.bashrc_persist
             conda activate uva
             cd unified_video_action_hot
-            accelerate launch --num_processes=4 train.py \
+            timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
                 --config-dir=. \
                 --config-name=uva_pusht.yaml \
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test1_video_only_origin/checkpoints/latest.ckpt    model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_serious      hydra.run.dir=checkpoints/test1_video_action_origin
+                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test1_video_only_origin/checkpoints/latest.ckpt    model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_serious      hydra.run.dir=checkpoints/test1_libero_video_action_origin
                 
                 
                
