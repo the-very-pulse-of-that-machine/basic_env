@@ -26,9 +26,45 @@ RUN rm -f /usr/lib/x86_64-linux-gnu/libnvidia-ml.so* \
 RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|https://mirrors.tuna.tsinghua.edu.cn/ubuntu/|g' /etc/apt/sources.list && \
     sed -i 's|http://security.ubuntu.com/ubuntu/|https://mirrors.tuna.tsinghua.edu.cn/ubuntu/|g' /etc/apt/sources.list && \
     apt-get update && apt-get install -y --no-install-recommends \
+        # 基础工具
         openssh-server sudo curl wget git vim nano htop tmux \
         build-essential cmake tzdata rsync unzip ffmpeg neofetch \
-        net-tools inetutils-ping && \
+        net-tools inetutils-ping \
+        # ========== mujoco 编译依赖 - Ubuntu 24.04 版本 ==========
+        libosmesa6-dev \
+        libgl1-mesa-dev \
+        libglx-mesa0 \
+        libglew-dev \
+        libglfw3-dev \
+        patchelf \
+        libegl-mesa0 \
+        # X11 开发库（关键修复：使用 -dev 版本）
+        libxrandr-dev \          
+        libxinerama-dev \         
+        libxcursor-dev \         
+        libxi-dev \               
+        libxext-dev \             
+        libxrender-dev \          
+        libxfixes-dev \           
+        libx11-dev \             
+        libxcomposite-dev \      
+        libxdamage-dev \         
+        libxkbfile-dev \          
+        # XKB 和 Wayland
+        libxkbcommon-dev \
+        libxkbcommon-x11-dev \    
+        libwayland-dev \
+        wayland-protocols \
+        # OpenGL/Mesa 开发库
+        libglvnd-dev \            
+        libgles2-mesa-dev \       
+        mesa-common-dev \        
+        # 其他开发依赖（保持最小化）
+        pkg-config libtool automake autoconf gcc g++ make \
+        # Python 开发
+        python3-dev python3-pip python3-venv python3-wheel \
+        cython3 swig \
+        && \
     rm -rf /var/lib/apt/lists/*
 
 # ==========================================================
@@ -82,22 +118,6 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py312_24.7.1-0-Linux-x86
 
 ENV PATH=/home/$USERNAME/miniconda/bin:$PATH
 
-# ==========================================================
-# 🧠 Python Environment
-# ==========================================================
-RUN pip install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple --upgrade pip setuptools wheel && \
-    pip install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple \
-        numpy scipy scikit-learn scikit-image pandas matplotlib seaborn \
-        opencv-python-headless pillow tqdm \
-        h5py einops tensorboard wandb \
-        lightning hydra-core omegaconf \
-        transformers diffusers accelerate timm \
-        torchmetrics lpips \
-        imageio imageio[ffmpeg] \
-        pyyaml ipython jupyterlab notebook && \
-    conda clean -afy
-
-# ==========================================================
 # 🔧 持久化 bashrc 加载自定义文件
 # ==========================================================
 RUN echo "source /workspace/qiaohansheng/.bashrc_persist" >> /home/$USERNAME/.bashrc
@@ -107,3 +127,4 @@ RUN echo "source /workspace/qiaohansheng/.bashrc_persist" >> /home/$USERNAME/.ba
 # ==========================================================
 USER $USERNAME
 CMD ["sudo", "/usr/sbin/sshd", "-D"]
+

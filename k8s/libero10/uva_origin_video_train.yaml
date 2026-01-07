@@ -75,10 +75,13 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            source /workspace/qiaohansheng/.bashrc_persist
+            source /workspace/qiaohansheng/.bashrc_job
             conda activate uva
             cd unified_video_action_hot
-            timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py     --config-dir=.     --config-name=uva_libero10.yaml     model.policy.action_model_params.predict_action=False     model.policy.selected_training_mode=video_model     model.policy.optimizer.learning_rate=1e-4     logging.project=uva_complex     hydra.run.dir="checkpoints/test2_libero_video_only_origin"
+            timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py   \
+             --config-dir=.   \
+               --config-name=uva_libero10.yaml  \
+                  model.policy.action_model_params.predict_action=False     model.policy.selected_training_mode=video_model     model.policy.optimizer.learning_rate=1e-4     logging.project=uva_complex     hydra.run.dir="checkpoints/test2_libero_video_only_origin"
 
 
         resources:
