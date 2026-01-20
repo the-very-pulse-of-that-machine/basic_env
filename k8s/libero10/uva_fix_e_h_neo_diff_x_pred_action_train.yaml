@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   # 🔴 [必填] 作业名称建议包含个人标识，防止重名冲突
-  name: 91mrqiao-basic-job2
+  name: 91mrqiao-basic-job3
   namespace: default
   labels:
     app: train-job
@@ -82,7 +82,7 @@ spec:
             timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
                 --config-dir=. \
                 --config-name=uva_expand_hot_libero10.yaml \
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_fix_expand_hot_neo_diff_v1
+                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_fix_expand_hot_neo_diff_x_pred
                 
                 
                
