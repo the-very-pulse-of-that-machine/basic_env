@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   # 🔴 [必填] 作业名称建议包含个人标识，防止重名冲突
-  name: 91mrqiao-basic-job3
+  name: 91mrqiao-basic-job4
   namespace: default
   labels:
     app: train-job
@@ -14,7 +14,7 @@ spec:
 
   # ✅ [核心] 允许重试次数 (也就是允许“轮转”的次数)
   # 比如你想跑 5 天，每天重启一次，这里至少设为 5，建议设大一点容错
-  backoffLimit: 10
+  backoffLimit: 1000
 
   # ✅ [清理] 任务完成后(无论成功失败) 10分钟自动删除 Job 对象，防止历史记录堆积
   ttlSecondsAfterFinished: 600
@@ -82,7 +82,7 @@ spec:
             timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
                 --config-dir=. \
                 --config-name=uva_expand_hot_libero10.yaml \
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_fix_expand_hot_neo_diff_x_pred_modified
+                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.get_all_first_frame_token=True    model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_fix_expand_hot_v4_neo_diff_x_pred
                 
                 
                
