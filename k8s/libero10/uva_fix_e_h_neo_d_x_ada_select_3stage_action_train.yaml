@@ -82,7 +82,7 @@ spec:
             accelerate launch --num_processes=4 train.py \
                 --config-dir=. \
                 --config-name=uva_expand_hot_libero10.yaml \
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.hot_selector_type=cross_attn    model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_fix_e_h_neo_d_x_pred_ada_v2_2
+                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_action_origin/checkpoints/latest.ckpt  model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.hot_selector_type=cross_attn    model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_fix_e_h_neo_d_x_pred_ada_3stage
                 
                 
                

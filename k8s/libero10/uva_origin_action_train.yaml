@@ -71,19 +71,48 @@ spec:
         # 2. 如果超过 3.8小时 -> timeout 杀掉进程 -> 返回 124 (错误) -> K8s 认为失败 -> 触发重启排队！
         # 3. 到达时间时 timeout 会先发送一个 SIGTERM 信号，如果你想处理的话，
         #    在 Python 里可以 catch 到这个信号后保存模型。（可选）
+
+
+        #            timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
+        #        --config-dir=. \
+        #        --config-name=uva_libero10.yaml \
+        #        model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt    model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test2_libero_video_action_origin
+                
+
+            #         TORCHELASTIC_ENABLE_FILE_TIMER=0 \
+            # CUDA_VISIBLE_DEVICES=0,1,2,3 \
+            # torchrun --standalone \
+            #   --nproc_per_node=4 \
+            #   train.py \
+            #   --config-dir=. \
+            #   --config-name=uva_libero10.yaml \
+            #   model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt \
+            #   model.policy.action_model_params.predict_action=True \
+            #   model.policy.optimizer.learning_rate=1e-4 \
+            #   logging.project=uva_complex \
+            #   hydra.run.dir=checkpoints/test2_libero_video_action_origin
         # =========================================================
         command: ["/bin/bash", "-c"]
         args:
           - |
             source /workspace/qiaohansheng/.bashrc_persist
+            export TORCHELASTIC_ENABLE_FILE_TIMER=0
             conda activate uva
             cd unified_video_action_hot
             wandb login
-            timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
-                --config-dir=. \
-                --config-name=uva_libero10.yaml \
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt    model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test2_libero_video_action_origin
+             export PYTHONMULTIPROCESSING_METHOD=fork 
+
+                   timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
+               --config-dir=. \
+               --config-name=uva_libero10.yaml \
+               model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt    model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test2_libero_video_action_origin
                 
+
+
+
+
+
+
                 
                
         resources:

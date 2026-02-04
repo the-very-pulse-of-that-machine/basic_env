@@ -76,13 +76,14 @@ spec:
         args:
           - |
             source /workspace/qiaohansheng/.bashrc_persist
-            conda activate uva
+            conda activate uva_n
+
             cd unified_video_action_hot
             wandb login
             timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
                 --config-dir=. \
                 --config-name=uva_expand_hot_libero10.yaml \
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_fix_expand_hot_neo_diff_x_pred_modified
+                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_fix_expand_hot_neo_diff_x_pred_modified2
                 
                 
                
@@ -92,7 +93,7 @@ spec:
             cpu: "40"
             memory: 400Gi
           requests:
-            memory: 350Gi
+            memory: 150Gi
 
         volumeMounts:
         # 1. 个人工作区 (读写)
@@ -124,4 +125,4 @@ spec:
       - name: dshm
         emptyDir:
           medium: Memory
-          sizeLimit: 160Gi
+          sizeLimit: 1600Gi

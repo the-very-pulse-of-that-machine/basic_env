@@ -53,7 +53,7 @@ spec:
                       - 580.65.06
 
       containers:
-      - name: 91mrqiao-job-container
+      - name: 91mrqiao-job-container1
         image: crpi-4h7f6m1tjs5g4t58.cn-hangzhou.personal.cr.aliyuncs.com/91_mrqiao/basic_env:devel
         imagePullPolicy: IfNotPresent
 
@@ -73,21 +73,64 @@ spec:
         #    在 Python 里可以 catch 到这个信号后保存模型。（可选）
         # =========================================================
         command: ["/bin/bash", "-c"]
+        # args:
+        #   - |
+        #     source /workspace/qiaohansheng/.bashrc_persist
+        #     conda activate uva
+        #     cd unified_video_action_hot
+        #     wandb login
+        #     accelerate launch --num_processes=4 train.py \
+        #         --config-dir=. \
+        #         --config-name=uva_expand_hot_libero10.yaml \
+        #         model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt   model.policy.autoregressive_model_params.hot_select_ratio=0.6   model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test2_libero_video_action_fix_expand_hot_tune_06
+
         args:
-          - |
-            source /workspace/qiaohansheng/.bashrc_persist
-            conda activate uva
-            cd unified_video_action_hot
-            wandb login
-            timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
-                --config-dir=. \
-                --config-name=uva_expand_hot_libero10.yaml \
-<<<<<<< HEAD
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt   model.policy.autoregressive_model_params.hot_select_ratio=0.1   model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test2_libero_video_action_fix_expand_hot_tune_01
-=======
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt    model.policy.autoregressive_model_params.hot_select_ratio=0.1   model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test2_libero_video_action_fix_expand_hot_tune_02
->>>>>>> a3ee80f175bf9a8c92010158cd1dbd1342e50903
-                
+        - |
+          set -x
+          source /workspace/qiaohansheng/.bashrc_persist
+          conda activate uva
+
+          echo "========== SYSTEM DIAG =========="
+          date
+          hostname
+          ulimit -a
+          echo "ulimit -u: $(ulimit -u)"
+          ps -ef | wc -l
+          df -h /dev/shm
+          free -h
+          nproc
+          echo "================================="
+
+          echo "========== GPU / EGL DIAG =========="
+          export MUJOCO_GL=egl
+          export EGL_DEVICE_ID=0
+          nvidia-smi
+          echo "MUJOCO_GL=$MUJOCO_GL"
+          echo "EGL_DEVICE_ID=$EGL_DEVICE_ID"
+          echo "==================================="
+
+          echo "========== ACCELERATE DIAG =========="
+          export TORCH_DISTRIBUTED_DEBUG=DETAIL
+          export NCCL_DEBUG=INFO
+          echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+          echo "WORLD_SIZE=$WORLD_SIZE"
+          echo "RANK=$RANK"
+          echo "LOCAL_RANK=$LOCAL_RANK"
+          echo "===================================="
+
+          cd unified_video_action_hot
+          wandb login
+
+          accelerate launch --num_processes=4 train.py \
+            --config-dir=. \
+            --config-name=uva_expand_hot_libero10.yaml \
+            model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt \
+            model.policy.autoregressive_model_params.hot_select_ratio=0.6 \
+            model.policy.action_model_params.predict_action=True \
+            model.policy.optimizer.learning_rate=1e-4 \
+            logging.project=uva_complex \
+            hydra.run.dir=checkpoints/test2_libero_video_action_fix_expand_hot_tune_06
+              
                 
                
         resources:

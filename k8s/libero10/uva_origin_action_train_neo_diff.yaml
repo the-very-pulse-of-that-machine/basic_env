@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   # 🔴 [必填] 作业名称建议包含个人标识，防止重名冲突
-  name: 91mrqiao-basic-job4
+  name: 91mrqiao-basic-job
   namespace: default
   labels:
     app: train-job
@@ -14,7 +14,7 @@ spec:
 
   # ✅ [核心] 允许重试次数 (也就是允许“轮转”的次数)
   # 比如你想跑 5 天，每天重启一次，这里至少设为 5，建议设大一点容错
-  backoffLimit: 1000
+  backoffLimit: 10
 
   # ✅ [清理] 任务完成后(无论成功失败) 10分钟自动删除 Job 对象，防止历史记录堆积
   ttlSecondsAfterFinished: 600
@@ -71,19 +71,48 @@ spec:
         # 2. 如果超过 3.8小时 -> timeout 杀掉进程 -> 返回 124 (错误) -> K8s 认为失败 -> 触发重启排队！
         # 3. 到达时间时 timeout 会先发送一个 SIGTERM 信号，如果你想处理的话，
         #    在 Python 里可以 catch 到这个信号后保存模型。（可选）
+
+
+        #            timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
+        #        --config-dir=. \
+        #        --config-name=uva_libero10.yaml \
+        #        model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt    model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test2_libero_video_action_origin
+                
+
+            #         TORCHELASTIC_ENABLE_FILE_TIMER=0 \
+            # CUDA_VISIBLE_DEVICES=0,1,2,3 \
+            # torchrun --standalone \
+            #   --nproc_per_node=4 \
+            #   train.py \
+            #   --config-dir=. \
+            #   --config-name=uva_libero10.yaml \
+            #   model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt \
+            #   model.policy.action_model_params.predict_action=True \
+            #   model.policy.optimizer.learning_rate=1e-4 \
+            #   logging.project=uva_complex \
+            #   hydra.run.dir=checkpoints/test2_libero_video_action_origin
         # =========================================================
         command: ["/bin/bash", "-c"]
         args:
           - |
             source /workspace/qiaohansheng/.bashrc_persist
+            export TORCHELASTIC_ENABLE_FILE_TIMER=0
             conda activate uva
             cd unified_video_action_hot
             wandb login
-            accelerate launch --num_processes=4 train.py \
-                --config-dir=. \
-                --config-name=uva_expand_hot_libero10.yaml \
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.hot_selector_type=cross_attn    model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_fix_e_h_neo_d_x_pred_ada_v2_2
+             export PYTHONMULTIPROCESSING_METHOD=fork 
+
+                   timeout -s SIGTERM 14200s accelerate launch --num_processes=4 train.py \
+               --config-dir=. \
+               --config-name=uva_libero10.yaml \
+               model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt    model.policy.action_model_params.predict_action=True    model.policy.action_model_params.act_model_type=transformer      +model.policy.autoregressive_model_params.x_pred=True    +model.policy.autoregressive_model_params.use_v_loss=True    model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test2_libero_video_action_origin_neo_diff
                 
+
+
+
+
+
+
                 
                
         resources:
@@ -92,7 +121,7 @@ spec:
             cpu: "40"
             memory: 400Gi
           requests:
-            memory: 150Gi
+            memory: 350Gi
 
         volumeMounts:
         # 1. 个人工作区 (读写)

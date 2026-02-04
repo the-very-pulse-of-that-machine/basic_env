@@ -50,7 +50,7 @@ spec:
     args:
       - |
         set -e
-        source /workspace/qiaohansheng/.bashrc_persist
+        #source /workspace/qiaohansheng/.bashrc_persist
         sudo /usr/sbin/sshd
         exec code-server --config /workspace/qiaohansheng/code/config.yaml
 
