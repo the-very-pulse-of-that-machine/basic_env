@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   # 🔴 [必填] 作业名称建议包含个人标识，防止重名冲突
-  name: 91mrqiao-basic-job4
+  name: 91mrqiao-basic-job
   namespace: default
   labels:
     app: train-job
@@ -14,7 +14,7 @@ spec:
 
   # ✅ [核心] 允许重试次数 (也就是允许“轮转”的次数)
   # 比如你想跑 5 天，每天重启一次，这里至少设为 5，建议设大一点容错
-  backoffLimit: 1000
+  backoffLimit: 10
 
   # ✅ [清理] 任务完成后(无论成功失败) 10分钟自动删除 Job 对象，防止历史记录堆积
   ttlSecondsAfterFinished: 600
@@ -59,32 +59,29 @@ spec:
 
         # 🔴 设置工作目录，避免命令里写长路径
         workingDir: /workspace/qiaohansheng/
+
         command: ["/bin/bash", "-c"]
         args:
           - |
             source /workspace/qiaohansheng/.bashrc_persist
             conda activate uva
             cd unified_video_action_hot
-            wandb login
-            accelerate launch --num_processes=4 train.py \
-                --config-dir=. \
-                --config-name=uva_expand_hot_libero10.yaml \
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  \
-                model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    \
-                model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.hot_selector_type=mlp    \
-                model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   \
-                model.policy.autoregressive_model_params.use_fixed_select=False \
-                checkpoint.topk.k=5  checkpoint.save_every_epoch_ckpt=True\
-                logging.project=uva_complex      hydra.run.dir=checkpoints/test5_libero_video_action_ada_mlp_train2_repeat
+            accelerate launch --num_processes=8 train.py   \
+            --config-dir=.     --config-name=uva_umi_multi.yaml     \
+            model.policy.action_model_params.predict_action=False     \
+            model.policy.selected_training_mode=video_model     \
+            model.policy.different_history_freq=True     \
+            model.policy.optimizer.learning_rate=1e-4     \
+            logging.project=uva_umi     \
+            task.dataset.dataset_root_dir=./uva/umi_data/zarr/
+            hydra.run.dir="test6_umi_video_only_origin"  \
 
-               
+
         resources:
           limits:
-            nvidia.com/gpu: "4"
-            cpu: "40"
-            memory: 400Gi
-          requests:
-            memory: 150Gi
+            nvidia.com/gpu: "8"
+            cpu: "80"
+            memory: 800Gi
 
         volumeMounts:
         # 1. 个人工作区 (读写)
@@ -116,4 +113,4 @@ spec:
       - name: dshm
         emptyDir:
           medium: Memory
-          sizeLimit: 160Gi
+          sizeLimit: 300Gi
