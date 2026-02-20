@@ -79,7 +79,7 @@ spec:
             conda activate uva
             cd unified_video_action_hot
             wandb login
-            accelerate launch --num_processes=2 train.py \
+            accelerate launch --num_processes=4 train.py \
                 --config-dir=. \
                 --config-name=uva_expand_hot_libero10.yaml \
                 model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  \
@@ -87,15 +87,15 @@ spec:
                 model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.hot_selector_type=mlp    \
                 model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   \
                 model.policy.autoregressive_model_params.use_fixed_select=True     model.policy.autoregressive_model_params.hot_select_ratio=0.7\
-                logging.project=uva_complex      hydra.run.dir=checkpoints/test4_libero_video_action_ada_mlp_tune_07
+                logging.project=uva_tune      hydra.run.dir=checkpoints/test5_libero_video_action_ada_mlp_tune_07
                 
                 
                
         resources:
           limits:
-            nvidia.com/gpu: "2"
-            cpu: "20"
-            memory: 200Gi
+            nvidia.com/gpu: "4"
+            cpu: "40"
+            memory: 400Gi
           requests:
             memory: 150Gi
 
