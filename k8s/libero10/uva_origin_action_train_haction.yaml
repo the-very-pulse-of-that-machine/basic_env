@@ -10,7 +10,7 @@ metadata:
     eks.ebcloud.com/prepaid: "true"
 spec:
   # ✅ Job 总共允许跑 7 天 (7 * 24 * 3600)
-  activeDeadlineSeconds: 604800
+  activeDeadlineSeconds: 172800
 
   # ✅ [核心] 允许重试次数 (也就是允许“轮转”的次数)
   # 比如你想跑 5 天，每天重启一次，这里至少设为 5，建议设大一点容错
@@ -109,7 +109,7 @@ spec:
                model.policy.action_model_params.predict_action=True   \
                model.policy.use_history_action=True  \
                model.policy.optimizer.learning_rate=1e-4   \
-               logging.project=uva_complex      \
+               logging.project=uva_proxima      \
                hydra.run.dir=checkpoints/test8_libero_video_action_origin_haction
                 
 
