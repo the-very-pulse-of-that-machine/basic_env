@@ -80,16 +80,18 @@ spec:
             cd unified_video_action_hot
             wandb login
             accelerate launch --num_processes=4 train.py \
-                --config-dir=. \
-                --config-name=uva_expand_hot_libero10.yaml \
-                model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt  \
-                model.policy.action_model_params.act_model_type=transformer   model.policy.action_model_params.predict_action=True    \
-                model.policy.autoregressive_model_params.x_pred=True    model.policy.autoregressive_model_params.hot_selector_type=mlp    \
-                model.policy.autoregressive_model_params.use_v_loss=True   model.policy.optimizer.learning_rate=1e-4   \
-                model.policy.autoregressive_model_params.use_fixed_select=False    model.policy.autoregressive_model_params.hot_select_ratio=0.1\
-                logging.project=uva_tune      hydra.run.dir=checkpoints/test5_libero_video_action_ada_mlp_tune_01
-                
-                
+            --config-dir=. \
+              --config-name=uva_expand_hot_libero10.yaml \
+              model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt \
+              model.policy.action_model_params.act_model_type=transformer \
+              model.policy.action_model_params.predict_action=True \
+              model.policy.autoregressive_model_params.hot_selector_type=mlp \
+              model.policy.autoregressive_model_params.enable_full_trans=False \
+              model.policy.optimizer.learning_rate=1e-4 \
+              model.policy.autoregressive_model_params.use_fixed_select=False \
+              model.policy.autoregressive_model_params.hot_select_ratio=0.1 \
+              logging.project=uva_tune \
+              hydra.run.dir=checkpoints/test7_libero_video_action_ada_mlp_neo_cond_01
                
         resources:
           limits:
