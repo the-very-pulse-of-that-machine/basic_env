@@ -72,14 +72,14 @@ spec:
               model.policy.action_model_params.act_model_type=dit \
               model.policy.action_model_params.predict_action=True \
               model.policy.autoregressive_model_params.x_pred=True \
-              model.policy.autoregressive_model_params.hot_selector_type=mlp \
+              model.policy.autoregressive_model_params.selector_type=mlp \
               model.policy.autoregressive_model_params.use_v_loss=True \
               model.policy.autoregressive_model_params.enable_full_trans=False \
               model.policy.optimizer.learning_rate=1e-4 \
               model.policy.autoregressive_model_params.use_fixed_select=False \
               model.policy.autoregressive_model_params.act_diff_testing_steps='"8"'\
               model.policy.autoregressive_model_params.act_diff_training_steps=80\
-              model.policy.autoregressive_model_params.hot_select_ratio=0.9 logging.project=uva_tune \
+              model.policy.autoregressive_model_params.select_ratio=0.9 logging.project=uva_tune \
               hydra.run.dir=checkpoints/test5_libero_video_action_dit_train  \
 
 

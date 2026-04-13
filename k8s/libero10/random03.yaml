@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   # 🔴 [必填] 作业名称建议包含个人标识，防止重名冲突
-  name: 91mrqiao-basic-job2
+  name: 91mrqiao-basic-job6
   namespace: default
   labels:
     app: train-job
@@ -10,11 +10,11 @@ metadata:
     eks.ebcloud.com/prepaid: "true"
 spec:
   # ✅ Job 总共允许跑 7 天 (7 * 24 * 3600)
-  activeDeadlineSeconds: 604800
+  activeDeadlineSeconds: 172800
 
   # ✅ [核心] 允许重试次数 (也就是允许“轮转”的次数)
   # 比如你想跑 5 天，每天重启一次，这里至少设为 5，建议设大一点容错
-  backoffLimit: 10
+  backoffLimit: 1000
 
   # ✅ [清理] 任务完成后(无论成功失败) 10分钟自动删除 Job 对象，防止历史记录堆积
   ttlSecondsAfterFinished: 600
@@ -53,7 +53,7 @@ spec:
                       - 580.65.06
 
       containers:
-      - name: 91mrqiao-job-container1
+      - name: 91mrqiao-job-container
         image: crpi-4h7f6m1tjs5g4t58.cn-hangzhou.personal.cr.aliyuncs.com/91_mrqiao/basic_env:devel
         imagePullPolicy: IfNotPresent
 
@@ -73,73 +73,33 @@ spec:
         #    在 Python 里可以 catch 到这个信号后保存模型。（可选）
         # =========================================================
         command: ["/bin/bash", "-c"]
-        # args:
-        #   - |
-        #     source /workspace/qiaohansheng/.bashrc_persist
-        #     conda activate uva
-        #     cd unified_video_action_hot
-        #     wandb login
-        #     accelerate launch --num_processes=4 train.py \
-        #         --config-dir=. \
-        #         --config-name=uva_expand_hot_libero10.yaml \
-        #         model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt   model.policy.autoregressive_model_params.select_ratio=0.6   model.policy.action_model_params.predict_action=True   model.policy.optimizer.learning_rate=1e-4   logging.project=uva_complex      hydra.run.dir=checkpoints/test2_libero_video_action_fix_expand_hot_tune_06
-
         args:
-        - |
-          set -x
-          source /workspace/qiaohansheng/.bashrc_persist
-          conda activate uva
-
-          echo "========== SYSTEM DIAG =========="
-          date
-          hostname
-          ulimit -a
-          echo "ulimit -u: $(ulimit -u)"
-          ps -ef | wc -l
-          df -h /dev/shm
-          free -h
-          nproc
-          echo "================================="
-
-          echo "========== GPU / EGL DIAG =========="
-          export MUJOCO_GL=egl
-          export EGL_DEVICE_ID=0
-          nvidia-smi
-          echo "MUJOCO_GL=$MUJOCO_GL"
-          echo "EGL_DEVICE_ID=$EGL_DEVICE_ID"
-          echo "==================================="
-
-          echo "========== ACCELERATE DIAG =========="
-          export TORCH_DISTRIBUTED_DEBUG=DETAIL
-          export NCCL_DEBUG=INFO
-          echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
-          echo "WORLD_SIZE=$WORLD_SIZE"
-          echo "RANK=$RANK"
-          echo "LOCAL_RANK=$LOCAL_RANK"
-          echo "===================================="
-
-          cd unified_video_action_hot
-          wandb login
-
-          accelerate launch --num_processes=4 train.py \
+          - |
+            source /workspace/qiaohansheng/.bashrc_persist
+            conda activate uva
+            cd unified_video_action_hot
+            wandb login
+            accelerate launch --num_processes=2 train.py \
             --config-dir=. \
-            --config-name=uva_expand_hot_libero10.yaml \
-            model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt \
-            model.policy.autoregressive_model_params.select_ratio=0.9 \
-            model.policy.action_model_params.predict_action=True \
-            model.policy.optimizer.learning_rate=1e-4 \
-            logging.project=uva_complex \
-            hydra.run.dir=checkpoints/test2_libero_video_action_fix_expand_hot_tune_09
-              
-                
+              --config-name=uva_expand_hot_libero10.yaml \
+              model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt \
+              model.policy.action_model_params.act_model_type=transformer \
+              model.policy.action_model_params.predict_action=True \
+              model.policy.autoregressive_model_params.selector_type=random \
+              model.policy.autoregressive_model_params.enable_full_trans=False \
+              model.policy.optimizer.learning_rate=1e-4 \
+              model.policy.autoregressive_model_params.use_fixed_select=False \
+              model.policy.autoregressive_model_params.select_ratio=0.3 \
+              logging.project=uva_final \
+              hydra.run.dir=checkpoints/test10_libero_video_action_random03
                
         resources:
           limits:
-            nvidia.com/gpu: "4"
-            cpu: "40"
-            memory: 400Gi
+            nvidia.com/gpu: "2"
+            cpu: "20"
+            memory: 200Gi
           requests:
-            memory: 350Gi
+            memory: 150Gi
 
         volumeMounts:
         # 1. 个人工作区 (读写)

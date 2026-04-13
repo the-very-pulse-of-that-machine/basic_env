@@ -10,7 +10,7 @@ metadata:
     eks.ebcloud.com/prepaid: "true"
 spec:
   # ✅ Job 总共允许跑 7 天 (7 * 24 * 3600)
-  activeDeadlineSeconds: 604800
+  activeDeadlineSeconds: 172800
 
   # ✅ [核心] 允许重试次数 (也就是允许“轮转”的次数)
   # 比如你想跑 5 天，每天重启一次，这里至少设为 5，建议设大一点容错
@@ -79,25 +79,25 @@ spec:
             conda activate uva
             cd unified_video_action_hot
             wandb login
-            accelerate launch --num_processes=4 train.py \
+            accelerate launch --num_processes=2 train.py \
             --config-dir=. \
               --config-name=uva_expand_hot_libero10.yaml \
               model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt \
               model.policy.action_model_params.act_model_type=transformer \
               model.policy.action_model_params.predict_action=True \
-              model.policy.autoregressive_model_params.hot_selector_type=mlp \
+              model.policy.autoregressive_model_params.selector_type=hot \
               model.policy.autoregressive_model_params.enable_full_trans=False \
               model.policy.optimizer.learning_rate=1e-4 \
               model.policy.autoregressive_model_params.use_fixed_select=False \
-              model.policy.autoregressive_model_params.hot_select_ratio=0.1 \
-              logging.project=uva_tune \
-              hydra.run.dir=checkpoints/test7_libero_video_action_ada_mlp_neo_cond_01
+              model.policy.autoregressive_model_params.select_ratio=0.3 \
+              logging.project=uva_final \
+              hydra.run.dir=checkpoints/test10_libero_video_action_hot03
                
         resources:
           limits:
-            nvidia.com/gpu: "4"
-            cpu: "40"
-            memory: 400Gi
+            nvidia.com/gpu: "2"
+            cpu: "20"
+            memory: 200Gi
           requests:
             memory: 150Gi
 

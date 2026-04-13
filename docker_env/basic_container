@@ -8,9 +8,8 @@ LABEL description="basic_env"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,graphics,display,video,vulkan
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,graphics,display,video
 
-# 预设 SAPIEN 渲染模式为 EGL (无头服务器离屏渲染必备)
 ENV SAPIEN_RENDER_MODE=egl
 
 WORKDIR /root
@@ -67,7 +66,6 @@ RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|https://mirrors.tuna.tsinghua.ed
         mesa-common-dev \      
         libvulkan1 \
         vulkan-tools \
-        libnvidia-egl-manager \
         libglvnd0 \
         libgl1 \
         libglx0 \
