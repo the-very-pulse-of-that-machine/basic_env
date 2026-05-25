@@ -32,7 +32,7 @@ RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|https://mirrors.tuna.tsinghua.ed
     sed -i 's|http://security.ubuntu.com/ubuntu/|https://mirrors.tuna.tsinghua.edu.cn/ubuntu/|g' /etc/apt/sources.list && \
     apt-get update && apt-get install -y --no-install-recommends \
         # 基础工具
-        openssh-server sudo curl wget git vim nano htop tmux \
+        openssh-server sudo curl wget git vim nano htop tmux aria2\
         build-essential cmake tzdata rsync unzip ffmpeg neofetch \
         net-tools inetutils-ping \
         # ========== mujoco 编译依赖 - Ubuntu 24.04 版本 ==========

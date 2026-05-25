@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K8s Deploy GUI — CVRLab</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --surface3: #2d333b;
+    --border: #30363d;
+    --border-focus: #58a6ff;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --text-dim: #484f58;
+    --blue: #58a6ff;
+    --blue-dark: #1f6feb;
+    --green: #3fb950;
+    --green-dark: #196c2e;
+    --yellow: #d29922;
+    --orange: #e3812c;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --cyan: #39c5cf;
+    --tag-pod: #1f6feb;
+    --tag-job: #196c2e;
+    --radius: 8px;
+    --radius-sm: 5px;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.3px;
+  }
+  .header-logo svg { color: var(--blue); }
+  .header-subtitle {
+    color: var(--text-muted);
+    font-size: 13px;
+    border-left: 1px solid var(--border);
+    padding-left: 16px;
+  }
+  .header-spacer { flex: 1; }
+  .header-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--blue-dark);
+    color: #cae8ff;
+    font-weight: 600;
+  }
+
+  /* ── Layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 0;
+    flex: 1;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 24px 40px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .tab-btn:hover { background: var(--surface2); color: var(--text); }
+  .tab-btn.active {
+    background: var(--surface3);
+    color: var(--text);
+  }
+  .tab-btn.active[data-tab="pod"] { color: var(--blue); }
+  .tab-btn.active[data-tab="job"] { color: var(--green); }
+  .tab-btn.active[data-tab="history"] { color: var(--purple); }
+  .badge {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--surface3);
+    min-width: 20px;
+    text-align: center;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .card-body { padding: 18px; }
+
+  /* ── Form ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.span2 { grid-column: span 2; }
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  label .required { color: var(--red); }
+  label .hint {
+    font-weight: 400;
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-left: auto;
+  }
+
+  input[type="text"], input[type="number"], select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 13px;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.12);
+  }
+  textarea {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    resize: vertical;
+    min-height: 100px;
+  }
+  select option { background: var(--surface2); }
+
+  /* ── Toggle / Switch ── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .toggle-row:hover { border-color: var(--border-focus); }
+  .toggle-info { display: flex; flex-direction: column; gap: 2px; }
+  .toggle-label { font-size: 13px; font-weight: 500; }
+  .toggle-desc { font-size: 11px; color: var(--text-muted); }
+  .switch {
+    width: 36px; height: 20px;
+    background: var(--surface3);
+    border-radius: 10px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 14px; height: 14px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+  .switch.on { background: var(--blue-dark); border-color: var(--blue); }
+  .switch.on::after { left: 18px; background: white; }
+  .switch.green-on { background: var(--green-dark); border-color: var(--green); }
+  .switch.green-on::after { left: 18px; background: white; }
+
+  /* ── Section separator ── */
+  .section { margin-bottom: 18px; }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Resource sliders ── */
+  .resource-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  .resource-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+  .resource-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .resource-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: var(--font-mono);
+  }
+  .resource-unit { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+  input[type="range"] {
+    width: 100%;
+    margin-top: 6px;
+    accent-color: var(--blue);
+    cursor: pointer;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn-primary {
+    background: var(--blue-dark);
+    color: white;
+  }
+  .btn-primary:hover { background: #388bfd; }
+  .btn-success {
+    background: var(--green-dark);
+    color: white;
+  }
+  .btn-success:hover { background: #2ea043; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid rgba(248,81,73,0.3);
+  }
+  .btn-danger:hover { background: rgba(248,81,73,0.1); }
+  .btn-full { width: 100%; justify-content: center; }
+  .btn-lg { padding: 12px 24px; font-size: 15px; }
+
+  /* ── Action bar ── */
+  .action-bar {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── Right panel ── */
+  .right-panel { position: sticky; top: 76px; }
+  .yaml-preview {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .yaml-header {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .yaml-header span { flex: 1; }
+  .yaml-copy-btn {
+    padding: 4px 10px;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .yaml-copy-btn:hover { background: var(--border); color: var(--text); }
+  .yaml-content {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 14px;
+    overflow-x: auto;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    white-space: pre;
+  }
+
+  /* syntax highlight */
+  .y-key { color: #79c0ff; }
+  .y-str { color: #a5d6ff; }
+  .y-num { color: #ffa657; }
+  .y-bool { color: #ff7b72; }
+  .y-comment { color: #484f58; font-style: italic; }
+  .y-sep { color: var(--text-dim); }
+  .y-dash { color: var(--text-dim); }
+
+  /* ── History ── */
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+  .history-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: start;
+  }
+  .history-item:hover { border-color: var(--border-focus); background: var(--surface3); }
+  .history-name {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .history-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .history-time { font-size: 11px; color: var(--text-dim); text-align: right; }
+  .history-actions { display: flex; gap: 6px; align-items: center; }
+  .kind-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .kind-pod { background: rgba(31, 111, 235, 0.25); color: #79c0ff; }
+  .kind-job { background: rgba(25, 108, 46, 0.3); color: #56d364; }
+
+  /* ── Import ── */
+  .import-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-muted);
+  }
+  .import-zone:hover, .import-zone.drag-over {
+    border-color: var(--border-focus);
+    background: rgba(88, 166, 255, 0.04);
+    color: var(--text);
+  }
+  .import-icon { font-size: 32px; margin-bottom: 8px; }
+  .import-text { font-size: 14px; font-weight: 500; }
+  .import-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 999;
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.info { border-color: var(--blue); color: var(--blue); }
+  #toast.warn { border-color: var(--yellow); color: var(--yellow); }
+
+  /* ── Misc ── */
+  .hidden { display: none !important; }
+  .flex { display: flex; }
+  .gap8 { gap: 8px; }
+  .ml-auto { margin-left: auto; }
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  .tag {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: var(--surface3);
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .tag.blue { background: rgba(31,111,235,0.2); color: #79c0ff; }
+  .tag.orange { background: rgba(227,129,44,0.2); color: #ffa657; }
+  .tag.green { background: rgba(63,185,80,0.2); color: #56d364; }
+  .tag.red { background: rgba(248,81,73,0.2); color: #ff7b72; }
+
+  .info-box {
+    background: rgba(88, 166, 255, 0.06);
+    border: 1px solid rgba(88, 166, 255, 0.2);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #a5d6ff;
+    line-height: 1.6;
+  }
+  .warn-box {
+    background: rgba(210, 153, 34, 0.06);
+    border: 1px solid rgba(210, 153, 34, 0.25);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #e3b341;
+    line-height: 1.6;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border); }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+  }
+  .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-state .msg { font-size: 14px; color: var(--text-muted); }
+  .empty-state .sub { font-size: 12px; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+    </svg>
+    K8s Deploy GUI
+  </div>
+  <span class="header-subtitle">CVRLab · EBCloud A800</span>
+  <div class="header-spacer"></div>
+  <span class="header-tag">A800 · NVLINK · 80GB</span>
+</header>
+
+<!-- Main -->
+<main class="layout">
+  <!-- Left: Form -->
+  <div class="left-panel">
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="pod" onclick="switchTab('pod')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+        Debug Pod
+      </button>
+      <button class="tab-btn" data-tab="job" onclick="switchTab('job')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        Train Job
+      </button>
+      <button class="tab-btn" data-tab="history" onclick="switchTab('history')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        历史
+        <span class="badge" id="history-count">0</span>
+      </button>
+      <button class="tab-btn" data-tab="import" onclick="switchTab('import')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        导入 YAML
+      </button>
+    </div>
+
+    <!-- ===================== POD TAB ===================== -->
+    <div id="tab-pod">
+      <div class="card">
+        <div class="card-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          <span class="card-title">Debug Pod 配置</span>
+          <span class="ml-auto tag blue">v1 / Pod</span>
+        </div>
+        <div class="card-body">
+
+          <!-- 基本信息 -->
+          <div class="section">
+            <div class="section-title">基本信息</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Pod 名称 <span class="required">*</span> <span class="hint">建议含你的标识</span></label>
+                <input type="text" id="pod-name" value="91mrqiao-test-pod" oninput="renderYaml()" placeholder="your-name-pod">
+              </div>
+              <div class="form-group">
+                <label>Namespace</label>
+                <input type="text" id="pod-ns" value="default" oninput="renderYaml()">
+              </div>
+              <div class="form-group">
+                <label>镜像地址 <span class="required">*</span></label>
+                <input type="text" id="pod-image" value="crpi-4h7f6m1tjs5g4t58.cn-hangzhou.personal.cr.aliyuncs.com/91_mrqiao/basic_env:devel" oninput="renderYaml()">
+              </div>
+              <div class="form-group">
+                <label>镜像拉取策略</label>
+                <select id="pod-pull" onchange="renderYaml()">
+                  <option value="Always" selected>Always（镜像有更新）</option>
+                  <option value="IfNotPresent">IfNotPresent（快速启动）</option>
+                  <option value="Never">Never</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>ImagePullSecret <span class="required">*</span></label>
+                <input type="text" id="pod-secret" value="pw-91mrqiao" oninput="renderYaml()">
+              </div>
+              <div class="form-group">
+                <label>工作目录 <span class="required">*</span></label>
+                <input type="text" id="pod-workdir" value="/workspace/qiaohansheng/" oninput="renderYaml()">
+              </div>
+              <div class="form-group">
+                <label>Restart 策略</label>
+                <select id="pod-restart" onchange="renderYaml()">
+                  <option value="OnFailure" selected>OnFailure（推荐调试）</option>
+                  <option value="Never">Never</option>
+                  <option value="Always">Always</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>最长运行时间 <span class="hint">调试 Pod 上限 12h</span></label>
+                <select id="pod-deadline" onchange="renderYaml()">
+                  <option value="3600">1 小时</option>
+                  <option value="7200">2 小时</option>
+                  <option value="14400">4 小时</option>
+                  <option value="28800">8 小时</option>
+                  <option value="43200" selected>12 小时（上限）</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 资源 -->
+          <div class="section">
+            <div class="section-title">GPU / CPU / Memory</div>
+            <div class="resource-grid">
+              <div class="resource-item">
+                <div class="resource-label">GPU <span class="tag" style="font-size:10px;">限制 ≤2</span></div>
+                <div class="resource-value"><span id="pod-gpu-val">1</span> <span class="resource-unit">卡</span></div>
+                <input type="range" id="pod-gpu" min="1" max="2" value="1" oninput="syncResource('pod-gpu','pod-gpu-val',this.value);renderYaml()">
+              </div>
+              <div class="resource-item">
+                <div class="resource-label">CPU</div>
+                <div class="resource-value"><span id="pod-cpu-val">10</span> <span class="resource-unit">核</span></div>
+                <input type="range" id="pod-cpu" min="1" max="80" value="10" oninput="syncResource('pod-cpu','pod-cpu-val',this.value);renderYaml()">
+              </div>
+              <div class="resource-item">
+                <div class="resource-label">Memory</div>
+                <div class="resource-value"><span id="pod-mem-val">100</span> <span class="resource-unit">Gi</span></div>
+                <input type="range" id="pod-mem" min="10" max="640" step="10" value="100" oninput="syncResource('pod-mem','pod-mem-val',this.value);renderYaml()">
+              </div>
+            </div>
+          </div>
+
+          <!-- shm -->
+          <div class="section">
+            <div class="section-title">共享内存 / dshm</div>
+            <div class="resource-item" style="grid-column:span 3">
+              <div class="resource-label">dshm sizeLimit</div>
+              <div class="resource-value"><span id="pod-shm-val">60</span> <span class="resource-unit">Gi</span></div>
+              <input type="range" id="pod-shm" min="10" max="320" step="10" value="60" oninput="syncResource('pod-shm','pod-shm-val',this.value);renderYaml()">
+            </div>
+          </div>
+
+          <!-- 挂载 -->
+          <div class="section">
+            <div class="section-title">存储挂载</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="toggle-row" onclick="toggleSwitch('pod-vol-workspace')">
+                <div class="toggle-info">
+                  <div class="toggle-label">workspace <span class="tag blue" style="font-size:10px">cvrlab-workspace</span></div>
+                  <div class="toggle-desc">挂载到 /workspace (读写)</div>
+                </div>
+                <div class="switch on" id="pod-vol-workspace-sw"></div>
+              </div>
+              <div class="toggle-row" onclick="toggleSwitch('pod-vol-dataset')">
+                <div class="toggle-info">
+                  <div class="toggle-label">dataset <span class="tag orange" style="font-size:10px">cvrlab-dataset</span></div>
+                  <div class="toggle-desc">挂载到 /dataset (读写，谨慎)</div>
+                </div>
+                <div class="switch on" id="pod-vol-dataset-sw"></div>
+              </div>
+              <div class="toggle-row" onclick="toggleSwitch('pod-vol-public')">
+                <div class="toggle-info">
+                  <div class="toggle-label">public <span class="tag" style="font-size:10px">hostPath /public</span></div>
+                  <div class="toggle-desc">挂载到 /public (强制只读)</div>
+                </div>
+                <div class="switch on" id="pod-vol-public-sw"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GPU 亲和性 -->
+          <div class="section">
+            <div class="section-title">节点亲和性</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="toggle-row" onclick="toggleSwitch('pod-affinity-gpu')">
+                <div class="toggle-info">
+                  <div class="toggle-label">GPU 型号亲和 <span class="tag green" style="font-size:10px">A800_NVLINK_80GB</span></div>
+                  <div class="toggle-desc">requiredDuringScheduling — 只调度到 A800 节点</div>
+                </div>
+                <div class="switch on" id="pod-affinity-gpu-sw"></div>
+              </div>
+              <div class="toggle-row" onclick="toggleSwitch('pod-affinity-driver')">
+                <div class="toggle-info">
+                  <div class="toggle-label">驱动版本限制 <span class="tag" style="font-size:10px">580.65.06</span></div>
+                  <div class="toggle-desc">若调度失败可关闭此项</div>
+                </div>
+                <div class="switch on" id="pod-affinity-driver-sw"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 启动命令 -->
+          <div class="section">
+            <div class="section-title">启动命令</div>
+            <div class="form-group">
+              <label>command args (bash -c 后的内容)</label>
+              <textarea id="pod-cmd" rows="5" oninput="renderYaml()">set -e
+sudo /usr/sbin/sshd
+exec code-server --config /workspace/qiaohansheng/code/config.yaml</textarea>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn btn-primary btn-lg" onclick="deploy('pod')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              生成 YAML 并部署
+            </button>
+            <button class="btn btn-ghost" onclick="saveHistory('pod')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              保存到历史
+            </button>
+            <button class="btn btn-ghost ml-auto" onclick="resetForm('pod')">重置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== JOB TAB ===================== -->
+    <div id="tab-job" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+          <span class="card-title">Train Job 配置</span>
+          <span class="ml-auto tag green">batch/v1 / Job</span>
+        </div>
+        <div class="card-body">
+
+          <!-- 基本信息 -->
+          <div class="section">
+            <div class="section-title">基本信息</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Job 名称 <span class="required">*</span></label>
+                <input type="text" id="job-name" value="91mrqiao-basic-job" oninput="renderYaml()">
+              </div>
+              <div class="form-group">
+                <label>Namespace</label>
+                <input type="text" id="job-ns" value="default" oninput="renderYaml()">
+              </div>
+              <div class="form-group">
+                <label>镜像地址 <span class="required">*</span></label>
+                <input type="text" id="job-image" value="crpi-4h7f6m1tjs5g4t58.cn-hangzhou.personal.cr.aliyuncs.com/91_mrqiao/basic_env:devel" oninput="renderYaml()">
+              </div>
+              <div class="form-group">
+                <label>镜像拉取策略</label>
+                <select id="job-pull" onchange="renderYaml()">
+                  <option value="Always">Always</option>
+                  <option value="IfNotPresent" selected>IfNotPresent（推荐）</option>
+                  <option value="Never">Never</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>ImagePullSecret</label>
+                <input type="text" id="job-secret" value="aliyun-regcred" oninput="renderYaml()">
+              </div>
+              <div class="form-group">
+                <label>工作目录 <span class="required">*</span></label>
+                <input type="text" id="job-workdir" value="/workspace/qiaohansheng/" oninput="renderYaml()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Job 调度策略 -->
+          <div class="section">
+            <div class="section-title">调度 / 轮转策略</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Job 总时长上限</label>
+                <select id="job-total-deadline" onchange="renderYaml()">
+                  <option value="86400">1 天</option>
+                  <option value="172800">2 天</option>
+                  <option value="259200">3 天</option>
+                  <option value="432000">5 天</option>
+                  <option value="604800" selected>7 天（上限）</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>单轮次时长 <span class="hint">轮转间隔</span></label>
+                <select id="job-round-deadline" onchange="renderYaml()">
+                  <option value="7200">2 小时</option>
+                  <option value="10800">3 小时</option>
+                  <option value="14400" selected>4 小时（推荐）</option>
+                  <option value="21600">6 小时</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>backoffLimit <span class="hint">重试/轮转次数</span></label>
+                <input type="number" id="job-backoff" value="10" min="1" max="1000" oninput="renderYaml()">
+              </div>
+              <div class="form-group">
+                <label>ttlSecondsAfterFinished</label>
+                <select id="job-ttl" onchange="renderYaml()">
+                  <option value="300">5 分钟</option>
+                  <option value="600" selected>10 分钟</option>
+                  <option value="1800">30 分钟</option>
+                  <option value="3600">1 小时</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 自动超时轮转 -->
+          <div class="section">
+            <div class="section-title">自动轮转（timeout 黑科技）</div>
+            <div class="toggle-row" onclick="toggleSwitch('job-timeout-wrap')" style="margin-bottom:10px">
+              <div class="toggle-info">
+                <div class="toggle-label">启用 timeout 自动轮转</div>
+                <div class="toggle-desc">在命令前加 timeout -s SIGTERM {N}s 实现自动排队续训</div>
+              </div>
+              <div class="switch on" id="job-timeout-wrap-sw"></div>
+            </div>
+            <div class="info-box">
+              timeout 时长 = 单轮次 - 200s 缓冲，防止训练刚好踩死线。<br>
+              训练完成 → 返回0 → Job成功；超时 → 返回124 → K8s重排队。
+            </div>
+          </div>
+
+          <!-- 资源 -->
+          <div class="section">
+            <div class="section-title">GPU / CPU / Memory</div>
+            <div class="resource-grid">
+              <div class="resource-item">
+                <div class="resource-label">GPU <span class="tag" style="font-size:10px">A800</span></div>
+                <div class="resource-value"><span id="job-gpu-val">4</span> <span class="resource-unit">卡</span></div>
+                <input type="range" id="job-gpu" min="1" max="8" value="4" oninput="syncResource('job-gpu','job-gpu-val',this.value);renderYaml()">
+              </div>
+              <div class="resource-item">
+                <div class="resource-label">CPU</div>
+                <div class="resource-value"><span id="job-cpu-val">40</span> <span class="resource-unit">核</span></div>
+                <input type="range" id="job-cpu" min="4" max="128" step="4" value="40" oninput="syncResource('job-cpu','job-cpu-val',this.value);renderYaml()">
+              </div>
+              <div class="resource-item">
+                <div class="resource-label">Memory Limit</div>
+                <div class="resource-value"><span id="job-mem-val">400</span> <span class="resource-unit">Gi</span></div>
+                <input type="range" id="job-mem" min="50" max="640" step="50" value="400" oninput="syncResource('job-mem','job-mem-val',this.value);renderYaml()">
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <div class="toggle-row" onclick="toggleSwitch('job-mem-req')">
+                <div class="toggle-info">
+                  <div class="toggle-label">设置 Memory Request</div>
+                  <div class="toggle-desc">防止被调度到内存不足的节点</div>
+                </div>
+                <div class="switch on" id="job-mem-req-sw"></div>
+              </div>
+              <div id="job-mem-req-area" style="margin-top:8px">
+                <div class="resource-item">
+                  <div class="resource-label">Memory Request</div>
+                  <div class="resource-value"><span id="job-memreq-val">350</span> <span class="resource-unit">Gi</span></div>
+                  <input type="range" id="job-memreq" min="50" max="640" step="50" value="350" oninput="syncResource('job-memreq','job-memreq-val',this.value);renderYaml()">
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <div class="resource-item">
+                <div class="resource-label">dshm sizeLimit</div>
+                <div class="resource-value"><span id="job-shm-val">160</span> <span class="resource-unit">Gi</span></div>
+                <input type="range" id="job-shm" min="10" max="320" step="10" value="160" oninput="syncResource('job-shm','job-shm-val',this.value);renderYaml()">
+              </div>
+            </div>
+          </div>
+
+          <!-- 节点亲和性 -->
+          <div class="section">
+            <div class="section-title">节点亲和性</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="toggle-row" onclick="toggleSwitch('job-affinity-gpu')">
+                <div class="toggle-info">
+                  <div class="toggle-label">GPU 型号亲和 <span class="tag green" style="font-size:10px">A800_NVLINK_80GB</span></div>
+                  <div class="toggle-desc">requiredDuringScheduling</div>
+                </div>
+                <div class="switch on" id="job-affinity-gpu-sw"></div>
+              </div>
+              <div class="toggle-row" onclick="toggleSwitch('job-affinity-driver')">
+                <div class="toggle-info">
+                  <div class="toggle-label">驱动版本限制 <span class="tag" style="font-size:10px">580.65.06</span></div>
+                  <div class="toggle-desc">若调度失败可关闭</div>
+                </div>
+                <div class="switch on" id="job-affinity-driver-sw"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 挂载 -->
+          <div class="section">
+            <div class="section-title">存储挂载</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="toggle-row" onclick="toggleSwitch('job-vol-workspace')">
+                <div class="toggle-info">
+                  <div class="toggle-label">workspace <span class="tag blue" style="font-size:10px">cvrlab-workspace</span></div>
+                  <div class="toggle-desc">/workspace (读写)</div>
+                </div>
+                <div class="switch on" id="job-vol-workspace-sw"></div>
+              </div>
+              <div class="toggle-row" onclick="toggleSwitch('job-vol-dataset')">
+                <div class="toggle-info">
+                  <div class="toggle-label">dataset <span class="tag orange" style="font-size:10px">cvrlab-dataset</span></div>
+                  <div class="toggle-desc">/dataset (读写)</div>
+                </div>
+                <div class="switch on" id="job-vol-dataset-sw"></div>
+              </div>
+              <div class="toggle-row" onclick="toggleSwitch('job-vol-public')">
+                <div class="toggle-info">
+                  <div class="toggle-label">public <span class="tag" style="font-size:10px">hostPath /public</span></div>
+                  <div class="toggle-desc">/public (只读)</div>
+                </div>
+                <div class="switch on" id="job-vol-public-sw"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 训练命令 -->
+          <div class="section">
+            <div class="section-title">训练命令 (bash -c 后)</div>
+            <div class="form-group">
+              <textarea id="job-cmd" rows="10" oninput="renderYaml()">source /workspace/qiaohansheng/.bashrc_persist
+export TORCHELASTIC_ENABLE_FILE_TIMER=0
+conda activate uva
+cd unified_video_action_hot
+wandb login
+export PYTHONMULTIPROCESSING_METHOD=fork
+accelerate launch --num_processes=4 train.py \
+    --config-dir=. \
+    --config-name=uva_libero10.yaml \
+    model.policy.autoregressive_model_params.pretrained_model_path=checkpoints/test2_libero_video_only_origin/checkpoints/latest.ckpt \
+    model.policy.action_model_params.predict_action=True \
+    model.policy.optimizer.learning_rate=1e-4 \
+    logging.project=uva_complex \
+    hydra.run.dir=checkpoints/my_run</textarea>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn btn-success btn-lg" onclick="deploy('job')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              生成 YAML 并部署
+            </button>
+            <button class="btn btn-ghost" onclick="saveHistory('job')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              保存到历史
+            </button>
+            <button class="btn btn-ghost ml-auto" onclick="resetForm('job')">重置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== HISTORY TAB ===================== -->
+    <div id="tab-history" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="card-title">部署历史</span>
+          <button class="btn btn-ghost ml-auto" style="padding:4px 10px;font-size:11px" onclick="clearHistory()">清空</button>
+        </div>
+        <div class="card-body">
+          <div class="history-list" id="history-list">
+            <div class="empty-state">
+              <div class="icon">📋</div>
+              <div class="msg">还没有历史记录</div>
+              <div class="sub">保存或部署后会自动出现在这里</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== IMPORT TAB ===================== -->
+    <div id="tab-import" class="hidden">
+      <div class="card">
+        <div class="card-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="card-title">导入 YAML 文件</span>
+        </div>
+        <div class="card-body">
+          <div class="import-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+               ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+            <div class="import-icon">📂</div>
+            <div class="import-text">拖拽 YAML 文件到此处，或点击选择</div>
+            <div class="import-sub">支持 .yaml / .yml，自动解析并填充表单</div>
+          </div>
+          <input type="file" id="file-input" accept=".yaml,.yml" style="display:none" onchange="handleFileSelect(event)">
+
+          <hr class="divider">
+
+          <div class="form-group">
+            <label>或直接粘贴 YAML 内容</label>
+            <textarea id="paste-yaml" rows="14" placeholder="粘贴 YAML 内容..." style="font-family: var(--font-mono)"></textarea>
+          </div>
+          <div class="action-bar">
+            <button class="btn btn-primary" onclick="parseImportYaml()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              解析并填充表单
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: YAML Preview -->
+  <div class="right-panel">
+    <div class="yaml-preview">
+      <div class="yaml-header">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <span>YAML 预览</span>
+        <button class="yaml-copy-btn" onclick="copyYaml()">复制</button>
+        <button class="yaml-copy-btn" onclick="downloadYaml()" style="margin-left:4px">下载</button>
+      </div>
+      <div class="yaml-content" id="yaml-display"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let currentTab = 'pod';
+const toggleState = {};
+let history = JSON.parse(localStorage.getItem('k8s-gui-history') || '[]');
+
+// ─── Toggle switches ─────────────────────────────────────────────────────────
+function toggleSwitch(id) {
+  toggleState[id] = !getToggle(id);
+  const sw = document.getElementById(id + '-sw');
+  if (sw) {
+    sw.classList.toggle('on', toggleState[id]);
+    sw.classList.toggle('green-on', false);
+    if (toggleState[id]) sw.classList.add('on');
+  }
+  // show/hide dependent areas
+  if (id === 'job-mem-req') {
+    document.getElementById('job-mem-req-area').style.display = toggleState[id] ? '' : 'none';
+  }
+  renderYaml();
+}
+
+function getToggle(id) {
+  if (id in toggleState) return toggleState[id];
+  // defaults: most are on
+  const defaults = {
+    'pod-vol-workspace': true, 'pod-vol-dataset': true, 'pod-vol-public': true,
+    'pod-affinity-gpu': true, 'pod-affinity-driver': true,
+    'job-vol-workspace': true, 'job-vol-dataset': true, 'job-vol-public': true,
+    'job-affinity-gpu': true, 'job-affinity-driver': true,
+    'job-timeout-wrap': true, 'job-mem-req': true,
+  };
+  return defaults[id] !== undefined ? defaults[id] : true;
+}
+
+function syncResource(rangeId, valId, val) {
+  document.getElementById(valId).textContent = val;
+}
+
+// ─── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  ['pod','job','history','import'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+    document.querySelector(`.tab-btn[data-tab="${t}"]`).classList.toggle('active', t === tab);
+  });
+  if (tab !== 'history' && tab !== 'import') renderYaml();
+  if (tab === 'history') renderHistory();
+}
+
+// ─── Value getters ────────────────────────────────────────────────────────────
+function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+function n(id) { return parseInt(v(id)) || 0; }
+
+// ─── YAML generators ──────────────────────────────────────────────────────────
+function buildPodYaml() {
+  const name = v('pod-name') || 'my-pod';
+  const ns = v('pod-ns') || 'default';
+  const image = v('pod-image');
+  const pull = v('pod-pull');
+  const secret = v('pod-secret');
+  const workdir = v('pod-workdir');
+  const restart = v('pod-restart');
+  const deadline = n('pod-deadline');
+  const gpu = v('pod-gpu');
+  const cpu = v('pod-cpu');
+  const mem = v('pod-mem');
+  const shm = v('pod-shm');
+  const cmd = v('pod-cmd').split('\n').map(l => '        ' + l).join('\n');
+
+  const affGpu = getToggle('pod-affinity-gpu');
+  const affDriver = getToggle('pod-affinity-driver');
+  const volWs = getToggle('pod-vol-workspace');
+  const volDs = getToggle('pod-vol-dataset');
+  const volPub = getToggle('pod-vol-public');
+
+  let affBlock = '';
+  if (affGpu) {
+    affBlock = `  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: cloud.ebtech.com/gpu
+              operator: In
+              values:
+              - A800_NVLINK_80GB
+${affDriver ? `            - key: cloud.ebtech.com/gpu-driver
+              operator: In
+              values:
+              - 580.65.06` : ''}
+`;
+  }
+
+  let vmounts = '';
+  let vols = '';
+  if (volWs) {
+    vmounts += `    - name: workspace-volume\n      mountPath: /workspace\n`;
+    vols += `  - name: workspace-volume\n    persistentVolumeClaim:\n      claimName: cvrlab-workspace\n`;
+  }
+  if (volDs) {
+    vmounts += `    - name: dataset-volume\n      mountPath: /dataset\n`;
+    vols += `  - name: dataset-volume\n    persistentVolumeClaim:\n      claimName: cvrlab-dataset\n`;
+  }
+  if (volPub) {
+    vmounts += `    - name: public-volume\n      mountPath: /public\n      readOnly: true\n`;
+    vols += `  - name: public-volume\n    hostPath:\n      path: /public\n      type: Directory\n`;
+  }
+  vmounts += `    - mountPath: /dev/shm\n      name: dshm\n`;
+  vols += `  - name: dshm\n    emptyDir:\n      medium: Memory\n      sizeLimit: ${shm}Gi\n`;
+
+  return `apiVersion: v1
+kind: Pod
+metadata:
+  name: ${name}
+  namespace: ${ns}
+  labels:
+    app: ${name}
+    eks.ebcloud.com/prepaid: "true"
+spec:
+  activeDeadlineSeconds: ${deadline}
+  imagePullSecrets:
+    - name: ${secret}
+  restartPolicy: ${restart}
+${affBlock}  containers:
+  - name: ${name}-container
+    image: ${image}
+    imagePullPolicy: ${pull}
+    workingDir: ${workdir}
+    command: ["/bin/bash", "-c"]
+    args:
+      - |
+${cmd}
+    ports:
+    - containerPort: 22
+      name: ssh-22
+    resources:
+      limits:
+        nvidia.com/gpu: "${gpu}"
+        cpu: "${cpu}"
+        memory: ${mem}Gi
+    volumeMounts:
+${vmounts}  volumes:
+${vols}`;
+}
+
+function buildJobYaml() {
+  const name = v('job-name') || 'my-job';
+  const ns = v('job-ns') || 'default';
+  const image = v('job-image');
+  const pull = v('job-pull');
+  const secret = v('job-secret');
+  const workdir = v('job-workdir');
+  const totalDL = n('job-total-deadline');
+  const roundDL = n('job-round-deadline');
+  const backoff = v('job-backoff');
+  const ttl = v('job-ttl');
+  const gpu = v('job-gpu');
+  const cpu = v('job-cpu');
+  const mem = v('job-mem');
+  const memreq = v('job-memreq');
+  const shm = v('job-shm');
+  const useTimeout = getToggle('job-timeout-wrap');
+  const useMemReq = getToggle('job-mem-req');
+  const affGpu = getToggle('job-affinity-gpu');
+  const affDriver = getToggle('job-affinity-driver');
+  const volWs = getToggle('job-vol-workspace');
+  const volDs = getToggle('job-vol-dataset');
+  const volPub = getToggle('job-vol-public');
+
+  const userCmd = v('job-cmd');
+  const timeoutSec = Math.max(60, roundDL - 200);
+  let cmdBlock;
+  if (useTimeout) {
+    cmdBlock = userCmd.replace(
+      /^(accelerate launch|torchrun|python)/m,
+      `timeout -s SIGTERM ${timeoutSec}s $1`
+    );
+    if (cmdBlock === userCmd && !userCmd.includes('timeout')) {
+      cmdBlock = userCmd + `\n# NOTE: wrap main command with: timeout -s SIGTERM ${timeoutSec}s <cmd>`;
+    }
+  } else {
+    cmdBlock = userCmd;
+  }
+  const cmdIndented = cmdBlock.split('\n').map(l => '          ' + l).join('\n');
+
+  let affBlock = '';
+  if (affGpu) {
+    affBlock = `      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: cloud.ebtech.com/gpu
+                    operator: In
+                    values:
+                      - A800_NVLINK_80GB
+${affDriver ? `                  - key: cloud.ebtech.com/gpu-driver
+                    operator: In
+                    values:
+                      - 580.65.06` : ''}
+`;
+  }
+
+  let vmounts = '';
+  let vols = '';
+  if (volWs) {
+    vmounts += `        - name: workspace-volume\n          mountPath: /workspace\n`;
+    vols += `      - name: workspace-volume\n        persistentVolumeClaim:\n          claimName: cvrlab-workspace\n`;
+  }
+  if (volDs) {
+    vmounts += `        - name: dataset-volume\n          mountPath: /dataset\n`;
+    vols += `      - name: dataset-volume\n        persistentVolumeClaim:\n          claimName: cvrlab-dataset\n`;
+  }
+  if (volPub) {
+    vmounts += `        - name: public-volume\n          mountPath: /public\n          readOnly: true\n`;
+    vols += `      - name: public-volume\n        hostPath:\n          path: /public\n          type: Directory\n`;
+  }
+  vmounts += `        - mountPath: /dev/shm\n          name: dshm\n`;
+  vols += `      - name: dshm\n        emptyDir:\n          medium: Memory\n          sizeLimit: ${shm}Gi\n`;
+
+  const memReqBlock = useMemReq ? `          requests:\n            memory: ${memreq}Gi\n` : '';
+
+  return `apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${name}
+  namespace: ${ns}
+  labels:
+    app: train-job
+    eks.ebcloud.com/prepaid: "true"
+spec:
+  activeDeadlineSeconds: ${totalDL}
+  backoffLimit: ${backoff}
+  ttlSecondsAfterFinished: ${ttl}
+  template:
+    metadata:
+      labels:
+        app: train-job
+        eks.ebcloud.com/prepaid: "true"
+    spec:
+      restartPolicy: OnFailure
+      activeDeadlineSeconds: ${roundDL}
+      imagePullSecrets:
+        - name: ${secret}
+${affBlock}      containers:
+      - name: ${name}-container
+        image: ${image}
+        imagePullPolicy: ${pull}
+        workingDir: ${workdir}
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+${cmdIndented}
+        resources:
+          limits:
+            nvidia.com/gpu: "${gpu}"
+            cpu: "${cpu}"
+            memory: ${mem}Gi
+${memReqBlock}        volumeMounts:
+${vmounts}      volumes:
+${vols}`;
+}
+
+// ─── Syntax highlight ─────────────────────────────────────────────────────────
+function highlightYaml(yaml) {
+  return yaml.split('\n').map(line => {
+    if (/^\s*#/.test(line)) return `<span class="y-comment">${esc(line)}</span>`;
+    if (/^---/.test(line)) return `<span class="y-sep">${esc(line)}</span>`;
+    // key: value
+    const m = line.match(/^(\s*)([\w.\-/]+)(\s*:\s*)(.*)$/);
+    if (m) {
+      const [, indent, key, colon, val] = m;
+      let valHtml = '';
+      if (val === '' || val === undefined) {
+        valHtml = '';
+      } else if (/^(true|false|null)$/i.test(val.trim())) {
+        valHtml = `<span class="y-bool">${esc(val)}</span>`;
+      } else if (/^"?[\d]+"?$/.test(val.trim())) {
+        valHtml = `<span class="y-num">${esc(val)}</span>`;
+      } else {
+        valHtml = `<span class="y-str">${esc(val)}</span>`;
+      }
+      return `${esc(indent)}<span class="y-key">${esc(key)}</span><span class="y-sep">${esc(colon)}</span>${valHtml}`;
+    }
+    // list item
+    if (/^\s*- /.test(line)) {
+      return `<span class="y-dash">${esc(line)}</span>`;
+    }
+    return esc(line);
+  }).join('\n');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Render YAML ──────────────────────────────────────────────────────────────
+let _currentYaml = '';
+function renderYaml() {
+  try {
+    let yaml = '';
+    if (currentTab === 'pod') yaml = buildPodYaml();
+    else if (currentTab === 'job') yaml = buildJobYaml();
+    else return;
+    _currentYaml = yaml;
+    document.getElementById('yaml-display').innerHTML = highlightYaml(yaml);
+  } catch(e) {
+    document.getElementById('yaml-display').textContent = 'YAML 生成错误: ' + e.message;
+  }
+}
+
+// ─── Copy / Download ─────────────────────────────────────────────────────────
+function copyYaml() {
+  if (!_currentYaml) return toast('没有可复制的内容', 'warn');
+  navigator.clipboard.writeText(_currentYaml).then(() => toast('已复制到剪贴板 ✓', 'success'));
+}
+
+function downloadYaml() {
+  if (!_currentYaml) return toast('没有可下载的内容', 'warn');
+  const name = currentTab === 'pod' ? v('pod-name') : v('job-name');
+  const blob = new Blob([_currentYaml], {type: 'text/yaml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (name || 'deploy') + '.yaml';
+  a.click();
+  toast('已下载 ' + a.download, 'success');
+}
+
+// ─── Deploy (copy to clipboard + show kubectl command) ───────────────────────
+function deploy(type) {
+  renderYaml();
+  if (!_currentYaml) return;
+  navigator.clipboard.writeText(_currentYaml).then(() => {
+    saveHistory(type);
+    toast('YAML 已复制！运行 kubectl apply -f <file>', 'success');
+  }).catch(() => {
+    toast('请手动复制 YAML', 'warn');
+  });
+}
+
+// ─── History ─────────────────────────────────────────────────────────────────
+function saveHistory(type) {
+  renderYaml();
+  if (!_currentYaml) return;
+  const name = type === 'pod' ? v('pod-name') : v('job-name');
+  const gpu = type === 'pod' ? v('pod-gpu') : v('job-gpu');
+  const mem = type === 'pod' ? v('pod-mem') : v('job-mem');
+  const entry = {
+    id: Date.now(),
+    type,
+    name: name || 'unnamed',
+    gpu, mem,
+    yaml: _currentYaml,
+    time: new Date().toLocaleString('zh-CN'),
+    cmd: type === 'pod' ? v('pod-cmd').slice(0,60) : v('job-cmd').slice(0,60),
+  };
+  history.unshift(entry);
+  if (history.length > 50) history = history.slice(0, 50);
+  localStorage.setItem('k8s-gui-history', JSON.stringify(history));
+  document.getElementById('history-count').textContent = history.length;
+  toast('已保存到历史', 'success');
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!history.length) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><div class="msg">还没有历史记录</div><div class="sub">保存或部署后会自动出现在这里</div></div>`;
+    return;
+  }
+  list.innerHTML = history.map((h, i) => `
+    <div class="history-item">
+      <div>
+        <div class="history-name">
+          <span class="kind-badge kind-${h.type}">${h.type.toUpperCase()}</span>
+          ${esc(h.name)}
+        </div>
+        <div class="history-meta">
+          <span>GPU: ${h.gpu}卡</span>
+          <span>MEM: ${h.mem}Gi</span>
+          <span style="color:var(--text-dim);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.cmd)}…</span>
+        </div>
+      </div>
+      <div>
+        <div class="history-time">${h.time}</div>
+        <div class="history-actions" style="margin-top:6px;justify-content:flex-end">
+          <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="loadHistory(${i})">加载</button>
+          <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="copyHistoryYaml(${i})">复制</button>
+          <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="deleteHistory(${i})">删除</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadHistory(i) {
+  const h = history[i];
+  if (!h) return;
+  // Just show yaml in preview and switch tab
+  _currentYaml = h.yaml;
+  document.getElementById('yaml-display').innerHTML = highlightYaml(h.yaml);
+  toast('已加载历史 YAML (可在预览区复制)', 'info');
+}
+
+function copyHistoryYaml(i) {
+  const h = history[i];
+  if (!h) return;
+  navigator.clipboard.writeText(h.yaml).then(() => toast('已复制历史 YAML ✓', 'success'));
+}
+
+function deleteHistory(i) {
+  history.splice(i, 1);
+  localStorage.setItem('k8s-gui-history', JSON.stringify(history));
+  document.getElementById('history-count').textContent = history.length;
+  renderHistory();
+  toast('已删除', 'info');
+}
+
+function clearHistory() {
+  if (!confirm('确定清空所有历史记录？')) return;
+  history = [];
+  localStorage.setItem('k8s-gui-history', JSON.stringify(history));
+  document.getElementById('history-count').textContent = '0';
+  renderHistory();
+  toast('已清空历史', 'warn');
+}
+
+// ─── Import / Parse ──────────────────────────────────────────────────────────
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+function handleDragLeave(e) {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) readFile(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) readFile(file);
+}
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('paste-yaml').value = ev.target.result;
+    toast('文件已读取，点击「解析」填充表单', 'info');
+  };
+  reader.readAsText(file);
+}
+
+function parseImportYaml() {
+  const raw = document.getElementById('paste-yaml').value.trim();
+  if (!raw) return toast('请先粘贴或拖入 YAML', 'warn');
+
+  // Simple key-value extractor (no full YAML parser needed for our templates)
+  const lines = raw.split('\n');
+  const get = (key) => {
+    const re = new RegExp(`^\\s*${key}:\\s*(.+)$`);
+    for (const l of lines) {
+      const m = l.match(re);
+      if (m) return m[1].replace(/^["']|["']$/g,'').trim();
+    }
+    return null;
+  };
+
+  const kind = get('kind');
+  if (!kind) return toast('无法识别 kind 字段', 'warn');
+
+  if (kind === 'Pod') {
+    setVal('pod-name', get('name'));
+    setVal('pod-ns', get('namespace') || 'default');
+    setVal('pod-image', get('image'));
+    setVal('pod-workdir', get('workingDir'));
+    // extract cmd from args
+    const argsIdx = lines.findIndex(l => l.includes('args:'));
+    if (argsIdx >= 0) {
+      let cmd = [];
+      let inBlock = false;
+      for (let i = argsIdx + 1; i < lines.length; i++) {
+        const l = lines[i];
+        if (/^\s*- \|/.test(l)) { inBlock = true; continue; }
+        if (inBlock) {
+          if (/^\s{2,}/.test(l) || l.trim() === '') cmd.push(l.trim());
+          else break;
+        }
+      }
+      if (cmd.length) setVal('pod-cmd', cmd.join('\n'));
+    }
+    switchTab('pod');
+    renderYaml();
+    toast('Pod YAML 已解析并填充 ✓', 'success');
+  } else if (kind === 'Job') {
+    setVal('job-name', get('name'));
+    setVal('job-ns', get('namespace') || 'default');
+    setVal('job-image', get('image'));
+    setVal('job-workdir', get('workingDir'));
+    // extract cmd
+    const argsIdx = lines.findIndex(l => l.includes('args:'));
+    if (argsIdx >= 0) {
+      let cmd = [];
+      let inBlock = false;
+      for (let i = argsIdx + 1; i < lines.length; i++) {
+        const l = lines[i];
+        if (/^\s*- \|/.test(l)) { inBlock = true; continue; }
+        if (inBlock) {
+          if (/^\s{2,}/.test(l) || l.trim() === '') cmd.push(l.replace(/^\s{12}/,''));
+          else break;
+        }
+      }
+      if (cmd.length) setVal('job-cmd', cmd.join('\n').trim());
+    }
+    // resources
+    const gpuLine = lines.find(l => l.includes('nvidia.com/gpu'));
+    if (gpuLine) {
+      const gm = gpuLine.match(/"?(\d+)"?/);
+      if (gm) { document.getElementById('job-gpu').value = gm[1]; syncResource('job-gpu','job-gpu-val',gm[1]); }
+    }
+    switchTab('job');
+    renderYaml();
+    toast('Job YAML 已解析并填充 ✓', 'success');
+  } else {
+    toast('不支持的 kind: ' + kind, 'warn');
+  }
+}
+
+function setVal(id, val) {
+  if (!val) return;
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function resetForm(type) {
+  if (!confirm('重置所有字段到默认值？')) return;
+  location.reload();
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.className = type;
+  el.innerHTML = (type === 'success' ? '✓ ' : type === 'warn' ? '⚠ ' : 'ℹ ') + msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('history-count').textContent = history.length;
+  renderYaml();
+});
+</script>
+</body>
+</html>
